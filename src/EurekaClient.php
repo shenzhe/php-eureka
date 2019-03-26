@@ -122,8 +122,8 @@ class EurekaClient
                 throw new InstanceFailureException("Could not get instances from Eureka.");
             }
 
-            $body = json_decode($response->getBody()->getContents());
-            if (!isset($body->application->instance)) {
+            $body = json_decode($response->getBody()->__toString(), true);
+            if (!isset($body['application']['instance'])) {
                 if (!empty($provider)) {
                     return $provider->getInstances($appName);
                 }
@@ -131,7 +131,7 @@ class EurekaClient
                 throw new InstanceFailureException("No instance found for '" . $appName . "'.");
             }
 
-            $this->instances[$appName] = $body->application->instance;
+            $this->instances[$appName] = $body['application']['instance'];
 
             return $this->instances[$appName];
         } catch (RequestException $e) {
