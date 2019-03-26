@@ -1,7 +1,7 @@
 <?php
 
 
-namespace service;
+namespace Eureka;
 
 
 use Eureka\Exceptions\InstanceFailureException;
