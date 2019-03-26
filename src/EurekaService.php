@@ -22,11 +22,7 @@ class EurekaService
 
     public function appSync()
     {
-        if (!empty($this->apps)) {
-            foreach ($this->apps as $name => $app) {
-                $this->getApps($name);
-            }
-        }
+        $this->client->sync();
     }
 
     public function getAppUri($appName, $instances = null)
@@ -67,38 +63,41 @@ class EurekaService
         return $this->apps;
     }
 
-    public function post($appName, $uri, $data = null, $header = null)
+    public function post($baseUri, $uri, $data = null, $header = null)
     {
-        return $this->request($appName, 'POST', $uri, $data, $header);
+        return $this->request($baseUri, 'POST', $uri, $data, $header);
     }
 
-    public function get($appName, $uri, $header = null)
+    public function get($baseUri, $uri, $header = null)
     {
-        return $this->request($appName, 'GET', $uri, null, $header);
+        return $this->request($baseUri, 'GET', $uri, null, $header);
     }
 
-    public function put($appName, $uri, $data = null, $header = null)
+    public function put($baseUri, $uri, $data = null, $header = null)
     {
-        return $this->request($appName, 'PUT', $uri, $data, $header);
+        return $this->request($baseUri, 'PUT', $uri, $data, $header);
     }
 
-    public function delete($appName, $uri, $header = null)
+    public function delete($baseUri, $uri, $header = null)
     {
-        return $this->request($appName, 'DELETE', $uri, null, $header);
+        return $this->request($baseUri, 'DELETE', $uri, null, $header);
     }
 
-    public function request($appName, $httpMethod, $uri, $data = null, $header = [])
+    public function request($baseUri, $httpMethod, $uri, $data = null, $header = [])
     {
-        $baseUri = $this->getAppUri($appName);
+        $headers = [
+            'Accept-Language' => 'en,zh-CN;q=0.9,zh;q=0.8',
+            'Content-Type' => ContentType::JSON,
+            'Accept' => ContentType::JSON,
+            'DNT' => '1',
+            'User-Agent' => 'saber'
+        ];
+        if (!empty($header)) {
+            $headers += $header;
+        }
         $client = Saber::create([
             'base_uri' => $baseUri,
-            'headers' => [
-                    'Accept-Language' => 'en,zh-CN;q=0.9,zh;q=0.8',
-                    'Content-Type' => ContentType::JSON,
-                    'Accept' => ContentType::JSON,
-                    'DNT' => '1',
-                    'User-Agent' => 'saber'
-                ] + $header
+            'headers' => $headers
         ]);
 
         $options['uri'] = $uri;

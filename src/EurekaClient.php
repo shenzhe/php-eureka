@@ -15,7 +15,7 @@ class EurekaClient
      * @var EurekaConfig
      */
     private $config;
-    private $instances;
+    private static $instances;
     private $client;
 
     // constructor
@@ -104,10 +104,10 @@ class EurekaClient
         return $this->config->getDiscoveryStrategy()->getInstance($instances);
     }
 
-    public function fetchInstances($appName)
+    public function fetchInstances($appName, $reload = false)
     {
-        if (!empty($this->instances[$appName])) {
-            return $this->instances[$appName];
+        if (!$reload && !empty(self::$instances[$appName])) {
+            return self::$instances[$appName];
         }
         $provider = $this->getConfig()->getInstanceProvider();
 
@@ -131,9 +131,9 @@ class EurekaClient
                 throw new InstanceFailureException("No instance found for '" . $appName . "'.");
             }
 
-            $this->instances[$appName] = $body['application']['instance'];
+            self::$instances[$appName] = $body['application']['instance'];
 
-            return $this->instances[$appName];
+            return self::$instances[$appName];
         } catch (RequestException $e) {
             if (!empty($provider)) {
                 return $provider->getInstances($appName);
@@ -145,7 +145,21 @@ class EurekaClient
 
     public function clearInstances()
     {
-        $this->instances = null;
+        self::$instances = null;
+    }
+
+    public function getAllInstances()
+    {
+        return self::$instances;
+    }
+
+    public function sync()
+    {
+        if (!empty(self::$instances)) {
+            foreach (self::$instances as $appName => $app) {
+                $this->fetchInstances($appName, true);
+            }
+        }
     }
 
     private function output($message)
