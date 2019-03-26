@@ -67,33 +67,35 @@ class EurekaService
         return $this->apps;
     }
 
-    public function post($appName, $uri, $data = null)
+    public function post($appName, $uri, $data = null, $header = null)
     {
-        return $this->request($appName, 'POST', $uri, $data);
+        return $this->request($appName, 'POST', $uri, $data, $header);
     }
 
-    public function get($appName, $uri)
+    public function get($appName, $uri, $header = null)
     {
-        return $this->request($appName, 'GET', $uri);
+        return $this->request($appName, 'GET', $uri, null, $header);
     }
 
-    public function put($appName, $uri, $data = null)
+    public function put($appName, $uri, $data = null, $header = null)
     {
-        return $this->request($appName, 'PUT', $uri, $data);
+        return $this->request($appName, 'PUT', $uri, $data, $header);
     }
 
-    public function delete($appName, $uri)
+    public function delete($appName, $uri, $header = null)
     {
-        return $this->request($appName, 'DELETE', $uri);
+        return $this->request($appName, 'DELETE', $uri, null, $header);
     }
 
-    public function request($appName, $httpMethod, $uri, $header = [], $data = null)
+    public function request($appName, $httpMethod, $uri, $data = null, $header = [])
     {
+        $baseUri = $this->getAppUri($appName);
         $client = Saber::create([
-            'base_uri' => $this->getAppUri($appName),
+            'base_uri' => $baseUri,
             'headers' => [
                     'Accept-Language' => 'en,zh-CN;q=0.9,zh;q=0.8',
                     'Content-Type' => ContentType::JSON,
+                    'Accept' => ContentType::JSON,
                     'DNT' => '1',
                     'User-Agent' => 'saber'
                 ] + $header
@@ -106,6 +108,7 @@ class EurekaService
             $options['data'] = $data;
         }
 
-        return $client->request($options);
+        $data = $client->request($options);
+        return $data;
     }
 }
