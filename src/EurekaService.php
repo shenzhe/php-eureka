@@ -29,12 +29,15 @@ class EurekaService
         }
     }
 
-    public function getAppUri($appName)
+    public function getAppUri($appName, $instances = null)
     {
-        if (empty($this->apps[$appName])) {
-            $this->getApps($appName);
+        if (empty($instances)) {
+            $instances = $this->apps;
         }
-        $app = $this->client->getConfig()->getDiscoveryStrategy()->getInstance($this->apps[$appName]);
+        if (empty($instances[$appName])) {
+            $instances = $this->getApps($appName);
+        }
+        $app = $this->client->getConfig()->getDiscoveryStrategy()->getInstance($instances[$appName]);
         if ('true' == $app['port']['@enabled']) {
             return 'http://' . $app['ipAddr'] . ':' . $app['port']['$'];
         }
