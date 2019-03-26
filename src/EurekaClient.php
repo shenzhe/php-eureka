@@ -6,124 +6,116 @@ use Eureka\Exceptions\DeRegisterFailureException;
 use Eureka\Exceptions\InstanceFailureException;
 use Eureka\Exceptions\RegisterFailureException;
 use Exception;
-use GuzzleHttp\Client as GuzzleClient;
-use GuzzleHttp\Exception\RequestException;
+use Swlib\Saber;
 
-class EurekaClient {
+class EurekaClient
+{
 
     /**
      * @var EurekaConfig
      */
     private $config;
     private $instances;
+    private $client;
 
     // constructor
-    public function __construct($config) {
+    public function __construct($config)
+    {
         $this->config = new EurekaConfig($config);
-    }
-
-    // getter
-    public function getConfig() {
-        return $this->config;
-    }
-
-    // register with eureka
-    public function register() {
-        $config = $this->config->getRegistrationConfig();
-
-        $client = new GuzzleClient(['base_uri' => $this->config->getEurekaDefaultUrl()]);
-        $this->output("[" . date("Y-m-d H:i:s") . "]" . " Registering...");
-
-        $response = $client->request('POST', '/eureka/apps/' . $this->config->getAppName(), [
+        $this->client = Saber::create([
+            'base_uri' => $this->config->getEurekaDefaultUrl(),
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ],
-            'body' => json_encode($config)
         ]);
+    }
 
-        if($response->getStatusCode() != 204) {
+    // getter
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    public function setConfig($config)
+    {
+        $this->config = new EurekaConfig($config);
+    }
+
+    // register with eureka
+    public function register()
+    {
+        $config = $this->config->getRegistrationConfig();
+        $this->output("[" . date("Y-m-d H:i:s") . "]" . " Registering...");
+
+        $response = $this->client->post('/eureka/apps/' . $this->config->getAppName(),
+            $config
+        );
+        if ($response->getStatusCode() != 204) {
             throw new RegisterFailureException("Could not register with Eureka.");
         }
     }
 
     // de-register from eureka
-    public function deRegister() {
-        $client = new GuzzleClient(['base_uri' => $this->config->getEurekaDefaultUrl()]);
+    public function deRegister()
+    {
         $this->output("[" . date("Y-m-d H:i:s") . "]" . " De-registering...");
 
-        $response = $client->request('DELETE', '/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId(), [
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            ]
-        ]);
+        $response = $this->client->delete('/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId());
 
-        if($response->getStatusCode() != 200) {
+        if ($response->getStatusCode() != 200) {
             throw new DeRegisterFailureException("Cloud not de-register from Eureka.");
         }
     }
 
     // send heartbeat to eureka
-    public function heartbeat() {
-        $client = new GuzzleClient(['base_uri' => $this->config->getEurekaDefaultUrl()]);
+    public function heartbeat()
+    {
         $this->output("[" . date("Y-m-d H:i:s") . "]" . " Sending heartbeat...");
 
         try {
-            $response = $client->request('PUT', '/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId(), [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
-            ]);
+            $response = $this->client->put('/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId());
 
-            if($response->getStatusCode() != 200) {
+            if ($response->getStatusCode() != 200) {
                 $this->output("[" . date("Y-m-d H:i:s") . "]" . " Heartbeat failed... (code: " . $response->getStatusCode() . ")");
             }
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             $this->output("[" . date("Y-m-d H:i:s") . "]" . "Heartbeat failed because of connection error... (code: " . $e->getCode() . ")");
         }
     }
 
     // register and send heartbeats periodically
-    public function start() {
+    public function start()
+    {
         $this->register();
 
-        $counter = 0;
-        while (true) {
+        //定时心跳
+        swoole_timer_tick($this->config->getHeartbeatInterval(), function () {
             $this->heartbeat();
-            $counter++;
-            sleep($this->config->getHeartbeatInterval());
-        }
+        });
 
         return 0;
     }
 
-    public function fetchInstance($appName) {
+    public function fetchInstance($appName)
+    {
         $instances = $this->fetchInstances($appName);
 
         return $this->config->getDiscoveryStrategy()->getInstance($instances);
     }
 
-    public function fetchInstances($appName) {
-        if(!empty($this->instances[$appName])) {
+    public function fetchInstances($appName)
+    {
+        if (!empty($this->instances[$appName])) {
             return $this->instances[$appName];
         }
-
-        $client = new GuzzleClient(['base_uri' => $this->config->getEurekaDefaultUrl()]);
         $provider = $this->getConfig()->getInstanceProvider();
 
         try {
-            $response = $client->request('GET', '/eureka/apps/' . $appName, [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
-            ]);
+            $response = $this->client->get('/eureka/apps/' . $appName);
 
-            if($response->getStatusCode() != 200) {
-                if(!empty($provider)) {
+            if ($response->getStatusCode() != 200) {
+                if (!empty($provider)) {
                     return $provider->getInstances($appName);
                 }
 
@@ -131,8 +123,8 @@ class EurekaClient {
             }
 
             $body = json_decode($response->getBody()->getContents());
-            if(!isset($body->application->instance)) {
-                if(!empty($provider)) {
+            if (!isset($body->application->instance)) {
+                if (!empty($provider)) {
                     return $provider->getInstances($appName);
                 }
 
@@ -142,9 +134,8 @@ class EurekaClient {
             $this->instances[$appName] = $body->application->instance;
 
             return $this->instances[$appName];
-        }
-        catch (RequestException $e) {
-            if(!empty($provider)) {
+        } catch (RequestException $e) {
+            if (!empty($provider)) {
                 return $provider->getInstances($appName);
             }
 
@@ -152,10 +143,16 @@ class EurekaClient {
         }
     }
 
-    private function output($message) {
-        if(php_sapi_name() !== 'cli')
+    public function clearInstances()
+    {
+        $this->instances = null;
+    }
+
+    private function output($message)
+    {
+        if (php_sapi_name() !== 'cli')
             return;
 
-        echo $message . "\n";
+        echo $message . PHP_EOL;
     }
 }
