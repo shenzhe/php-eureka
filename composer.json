@@ -1,8 +1,9 @@
 {
-    "name": "piwvh/php-eureka",
-    "description": "A PHP client for Spring Cloud Eureka discovery server.",
+    "name": "shenzhe/swoole-eureka",
+    "description": "A swoole client for Spring Cloud Eureka discovery server.",
     "keywords": [
         "php",
+        "swoole",
         "eureka",
         "spring cloud",
         "discovery server"
@@ -14,11 +15,17 @@
             "name": "Hamid Mohayeji",
             "email": "h.mohayeji@gmail.com",
             "role": "Developer"
+        },
+        {
+            "name": "shenzhe",
+            "email": "shenzhe163@gmail.com",
+            "role": "Developer"
         }
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": ">=5.4.0",
+        "php": ">=7.2",
+        "ext-swoole": ">=4.2.9",
         "swlib/saber": "*"
     },
     "autoload": {
