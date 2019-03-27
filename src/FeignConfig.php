@@ -24,7 +24,7 @@ class FeignConfig
     private $fallback = null;
     private $encode = null;
     private $decode = null;
-    private $descover = null;
+    private $discovery = null;
 
     // constructor
     public function __construct($config)
@@ -43,8 +43,8 @@ class FeignConfig
             return $this->baseUri;
         }
 
-        if (!empty($this->descover) && is_callable($this->descover)) {
-            return call_user_func($this->descover, $this->name);
+        if (!empty($this->discovery) && is_callable($this->discovery)) {
+            return call_user_func($this->discovery, $this->name);
         }
     }
 
