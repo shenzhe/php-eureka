@@ -44,7 +44,8 @@ class FeignClient
         }
         $client = Saber::create([
             'base_uri' => $this->config->getBaseUri(),
-            'headers' => $headers
+            'headers' => $headers,
+            'timeout' => $this->config->getTimeOut(),
         ]);
 
         $options['uri'] = $this->config->getUri();

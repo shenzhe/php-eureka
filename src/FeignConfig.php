@@ -26,6 +26,8 @@ class FeignConfig
     private $decode = null;
     private $discovery = null;
 
+    private $timeOut = 0.5; //超时时间
+
     // constructor
     public function __construct($config)
     {
@@ -86,5 +88,10 @@ class FeignConfig
     public function getDecode()
     {
         return $this->decode;
+    }
+
+    public function getTimeOut()
+    {
+        return $this->timeOut;
     }
 }
