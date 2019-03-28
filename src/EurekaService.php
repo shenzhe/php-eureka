@@ -60,6 +60,6 @@ class EurekaService
                 ];
             }
         }
-        return $this->apps;
+        return $this->apps[$appName];
     }
 }
