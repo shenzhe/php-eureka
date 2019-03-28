@@ -58,12 +58,21 @@ class FeignClient
             }
             $options['data'] = $data;
         }
+        try {
+            $ret = $client->request($options);
+            $decode = $this->config->getDecode();
+            if (!empty($decode) && is_callable($decode)) {
+                $ret = call_user_func($decode, $ret);
+            }
+            return $ret;
+        } catch (\Throwable $e) {
+            $fallback = $this->config->getFallback();
+            if ($fallback && is_callable($fallback)) {
+                $ret = call_user_func($fallback, $e);
+                return $ret;
+            }
 
-        $ret = $client->request($options);
-        $decode = $this->config->getDecode();
-        if (!empty($decode) && is_callable($decode)) {
-            $ret = call_user_func($decode, $ret);
+            throw $e;
         }
-        return $ret;
     }
 }
