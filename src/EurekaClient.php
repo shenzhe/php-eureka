@@ -68,6 +68,25 @@ class EurekaClient
         }
     }
 
+    public function syncDeRegister($timeOut = 3)
+    {
+        $context = stream_context_create(array(
+            'http' => array(
+                'method' => 'DELETE',
+                'header' => "Content-Type: application/json\r\n" .
+                    "Accept: application/json\r\n",
+                'timeout' => $timeOut
+            )));
+        $url = $this->getConfig()->getEurekaDefaultUrl() . '/apps/' . $this->getConfig()->getAppName() . '/' . $this->getConfig()->getInstanceId();
+        $result = file_get_contents($url, false, $context);
+        $headers = explode(' ', $http_response_header[0]);
+        if ($headers[1] != 200) {
+            throw new DeRegisterFailureException("Cloud not de-register from Eureka.");
+        }
+        return $result;
+
+    }
+
     // send heartbeat to eureka
     public function heartbeat()
     {
