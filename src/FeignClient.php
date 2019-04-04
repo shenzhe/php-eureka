@@ -19,6 +19,11 @@ class FeignClient
         $this->config = $config;
     }
 
+    public function setConfig(FeignConfig $config)
+    {
+        $this->config = $config;
+    }
+
     /**
      * @return FeignConfig
      */
@@ -29,6 +34,7 @@ class FeignClient
 
     /**
      * @return mixed|Saber\Request|Saber\Response
+     * @throws \Throwable
      */
     public function request()
     {
