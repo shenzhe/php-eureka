@@ -7,6 +7,7 @@ use Eureka\Exceptions\InstanceFailureException;
 use Eureka\Exceptions\RegisterFailureException;
 use Exception;
 use Swlib\Saber;
+use Eureka\Exceptions\HeartbeatFailureException;
 
 class EurekaClient
 {
@@ -48,7 +49,8 @@ class EurekaClient
         $config = $this->config->getRegistrationConfig();
         $this->output("[" . date("Y-m-d H:i:s") . "]" . " Registering...");
 
-        $response = $this->client->post('/eureka/apps/' . $this->config->getAppName(),
+        $response = $this->client->post(
+            '/eureka/apps/' . $this->config->getAppName(),
             $config
         );
         if ($response->getStatusCode() != 204) {
@@ -76,7 +78,8 @@ class EurekaClient
                 'header' => "Content-Type: application/json\r\n" .
                     "Accept: application/json\r\n",
                 'timeout' => $timeOut
-            )));
+            )
+        ));
         $url = $this->getConfig()->getEurekaDefaultUrl() . '/apps/' . $this->getConfig()->getAppName() . '/' . $this->getConfig()->getInstanceId();
         $result = file_get_contents($url, false, $context);
         $headers = explode(' ', $http_response_header[0]);
@@ -84,22 +87,19 @@ class EurekaClient
             throw new DeRegisterFailureException("Cloud not de-register from Eureka.");
         }
         return $result;
-
     }
 
     // send heartbeat to eureka
     public function heartbeat()
     {
         $this->output("[" . date("Y-m-d H:i:s") . "]" . " Sending heartbeat...");
-
-        try {
-            $response = $this->client->put('/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId());
-
-            if ($response->getStatusCode() != 200) {
-                $this->output("[" . date("Y-m-d H:i:s") . "]" . " Heartbeat failed... (code: " . $response->getStatusCode() . ")");
+        $response = $this->client->put('/eureka/apps/' . $this->config->getAppName() . '/' . $this->config->getInstanceId());
+        if ($response->getStatusCode() != 200) {
+            if (404 === $response->getStatusCode()) {
+                $this->register();
+            } else {
+                throw new HeartbeatFailureException(" Heartbeat failed... (code: " . $response->getStatusCode() . ")");
             }
-        } catch (Exception $e) {
-            $this->output("[" . date("Y-m-d H:i:s") . "]" . "Heartbeat failed because of connection error... (code: " . $e->getCode() . ")");
         }
     }
 
@@ -110,7 +110,11 @@ class EurekaClient
 
         //定时心跳
         swoole_timer_tick($this->config->getHeartbeatInterval(), function () {
-            $this->heartbeat();
+            try {
+                $this->heartbeat();
+            } catch (\Throwable $e) {
+                $this->output("[" . date("Y-m-d H:i:s") . "]" . "Heartbeat failed because of connection error... (code: " . $e->getCode() . ")");
+            }
         });
 
         return 0;

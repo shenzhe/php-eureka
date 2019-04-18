@@ -36,7 +36,7 @@ class FeignClient
      * @return mixed|Saber\Request|Saber\Response
      * @throws \Throwable
      */
-    public function request()
+    public function request($header = null)
     {
         $headers = [
             'Accept-Language' => 'en,zh-CN;q=0.9,zh;q=0.8',
