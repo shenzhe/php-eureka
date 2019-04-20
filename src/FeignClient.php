@@ -19,9 +19,9 @@ class FeignClient
         $this->config = $config;
     }
 
-    public function setConfig(FeignConfig $config)
+    public function setConfig($config)
     {
-        $this->config = $config;
+        $this->config->init($config);
     }
 
     /**
