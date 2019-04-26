@@ -29,6 +29,8 @@ class EurekaClient
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ],
+            'use_pool' => $config['use_pool'] ?? true,
+            'retry_time' => $config['retry_time'] ?? 0,
         ]);
     }
 

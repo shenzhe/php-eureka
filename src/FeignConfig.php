@@ -28,6 +28,9 @@ class FeignConfig
 
     private $timeOut = 0.5; //超时时间
 
+    private $usePool = true;
+    private $retryTime = 0;
+
     // constructor
     public function __construct($config)
     {
@@ -41,7 +44,6 @@ class FeignConfig
                 $this->$key = $value;
             }
         }
-
     }
 
     public function getBaseUri()
@@ -99,5 +101,15 @@ class FeignConfig
     public function getTimeOut()
     {
         return $this->timeOut;
+    }
+
+    public function getUsePool()
+    {
+        return $this->usePool;
+    }
+
+    public function getRetryTime()
+    {
+        return $this->retryTime;
     }
 }

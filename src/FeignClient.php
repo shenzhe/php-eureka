@@ -52,6 +52,8 @@ class FeignClient
             'base_uri' => $this->config->getBaseUri(),
             'headers' => $headers,
             'timeout' => $this->config->getTimeOut(),
+            'use_pool' => $this->config->getUsePool(),
+            'retry_time' => $this->config->getRetryTime(),
         ]);
 
         $options['uri'] = $this->config->getUri();
